@@ -1,0 +1,16 @@
+{
+    "credentials": {
+        "rollNumber": "23ETCCS136",
+        "email": "rudraksh.2023cse@technonjr.org",
+        "password": "rudraksh@123"
+    },
+    "urls": {
+        "loginUrl": "http://103.159.68.35:3535/auth/student/login",
+        "dashboardUrl": "http://103.159.68.35:3535/student"
+    },
+    "settings": {
+        "autoLoginEnabled": true,
+        "loginDelay": 2000,
+        "retryAttempts": 3
+    }
+}
