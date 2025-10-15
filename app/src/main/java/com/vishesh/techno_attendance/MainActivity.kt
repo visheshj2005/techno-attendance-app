@@ -619,6 +619,7 @@ class MainActivity : ComponentActivity() {
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                     val url = request?.url?.toString() ?: return false
+                    val currentUrl = view?.url
                     
                     return when {
                         // Rule 1: Block Techno NJR LMS with toast
@@ -634,6 +635,11 @@ class MainActivity : ComponentActivity() {
                                 Toast.makeText(this@MainActivity, "You cant reset password through this app", Toast.LENGTH_SHORT).show()
                             }
                             true // Block navigation
+                        }
+                        // Block redirection from student page to home page
+                        (currentUrl == "http://103.159.68.35:3535/student" || currentUrl == "http://103.159.68.35:3535/student/") && 
+                        (url == "http://103.159.68.35:3535/" || url == "http://103.159.68.35:3535") -> {
+                            true // Block navigation silently
                         }
                         // Allow all other navigation
                         else -> false
@@ -776,14 +782,68 @@ class MainActivity : ComponentActivity() {
                     });
                 }
                 
-                // Run both functions immediately
+                // Function to block logo and home page redirections
+                function blockHomePageRedirections() {
+                    // Block all links that redirect to home page
+                    const homeLinks = document.querySelectorAll('a[href="http://103.159.68.35:3535/"], a[href="http://103.159.68.35:3535"], a[href="/"], a[href="../"]');
+                    homeLinks.forEach(link => {
+                        console.log('Found home page link, adding blocker...');
+                        link.addEventListener('click', function(event) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }, true);
+                    });
+                    
+                    // Block logo images that might redirect to home
+                    const logoImages = document.querySelectorAll('img');
+                    logoImages.forEach(img => {
+                        const parent = img.parentElement;
+                        if (parent && parent.tagName === 'A') {
+                            const href = parent.getAttribute('href');
+                            if (href === 'http://103.159.68.35:3535/' || href === 'http://103.159.68.35:3535' || href === '/' || href === '../') {
+                                console.log('Found logo with home redirect, adding blocker...');
+                                parent.addEventListener('click', function(event) {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                }, true);
+                            }
+                        }
+                        
+                        // Also block direct click events on images that might have JavaScript redirects
+                        img.addEventListener('click', function(event) {
+                            // Check if this might be a logo (common logo characteristics)
+                            if (img.src && (img.src.includes('logo') || img.alt && img.alt.toLowerCase().includes('logo'))) {
+                                console.log('Potentially blocking logo click...');
+                                event.preventDefault();
+                                event.stopPropagation();
+                            }
+                        }, true);
+                    });
+                    
+                    // Block any element with onclick that tries to navigate to home
+                    const clickableElements = document.querySelectorAll('[onclick]');
+                    clickableElements.forEach(element => {
+                        const onclick = element.getAttribute('onclick');
+                        if (onclick && (onclick.includes('http://103.159.68.35:3535/') || onclick.includes('window.location') || onclick.includes('location.href'))) {
+                            console.log('Found element with suspicious onclick, adding blocker...');
+                            element.addEventListener('click', function(event) {
+                                event.preventDefault();
+                                event.stopPropagation();
+                            }, true);
+                        }
+                    });
+                }
+                
+                // Run all functions immediately
                 blockLogoutButton();
                 blockProblematicLinks();
+                blockHomePageRedirections();
                 
                 // Also run when DOM changes (for dynamically loaded content)
                 const observer = new MutationObserver(function(mutations) {
                     blockLogoutButton();
                     blockProblematicLinks();
+                    blockHomePageRedirections();
                 });
                 
                 observer.observe(document.body, {
